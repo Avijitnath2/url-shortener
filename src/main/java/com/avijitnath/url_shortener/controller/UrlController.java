@@ -5,13 +5,11 @@ import com.avijitnath.url_shortener.dto.ShortenResponse;
 import com.avijitnath.url_shortener.service.UrlService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
-import java.net.http.HttpClient;
 
 @RestController
 public class UrlController {
@@ -37,5 +35,12 @@ public class UrlController {
                 .status(HttpStatus.FOUND)
                 .location(URI.create(originalUrl))
                 .build();
+    }
+
+
+    @DeleteMapping("/api/urls/{code}")
+    public ResponseEntity<Void> deleteUrl(@PathVariable String code){
+        urlService.deleteUrl(code);
+        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
 }

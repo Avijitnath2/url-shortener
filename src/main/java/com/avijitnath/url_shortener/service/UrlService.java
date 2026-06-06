@@ -76,4 +76,12 @@ public class UrlService {
     }
 
 
+    @Transactional
+    public void deleteUrl(String shortCode){
+        ShortUrl url = urlRepository.findByShortCode(shortCode).orElseThrow(
+                () -> new UrlNotFoundException(shortCode));
+
+        urlRepository.delete(url);
+    }
+
 }
