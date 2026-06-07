@@ -8,25 +8,33 @@ import com.avijitnath.url_shortener.exception.UrlExpiredException;
 import com.avijitnath.url_shortener.exception.UrlNotFoundException;
 import com.avijitnath.url_shortener.repository.UrlRepository;
 import com.avijitnath.url_shortener.util.Base62Encoder;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.concurrent.TimeUnit;
 
 @Service
 public class UrlService {
 
     private UrlRepository urlRepository;
+    private RedisTemplate<String,String> template;
+
+    @Value("${app.redis.ttl}")
+    private long ttl;
 
     @Value("${app.base-url}")
     private String baseUrl;
 
 
     @Autowired
-    public UrlService(UrlRepository urlRepository) {
+    public UrlService(UrlRepository urlRepository, RedisTemplate<String,String> template) {
         this.urlRepository = urlRepository;
+        this.template = template;
     }
 
 
@@ -63,16 +71,23 @@ public class UrlService {
     }
 
     //return original url based on the short code/url provided
-    public ShortUrl redirect(String shortCode){
+    public String redirect(String shortCode){
+        String cachedUrl = template.opsForValue().get("url:"+shortCode);
+
+        if(cachedUrl != null) {
+            return cachedUrl;
+        }
+
         ShortUrl url = urlRepository.findByShortCode(shortCode)
                 .orElseThrow(() -> new UrlNotFoundException(shortCode));
 
         if(url.getExpiresAt() != null && url.getExpiresAt().isBefore(LocalDateTime.now())){
             throw new UrlExpiredException(shortCode);
         }
-        url.setTotalClicks(url.getTotalClicks() + 1L);
-        urlRepository.save(url);
-        return url;
+
+        template.opsForValue().set("url:"+shortCode, url.getOriginalUrl(),ttl, TimeUnit.SECONDS);
+
+        return url.getOriginalUrl();
     }
 
 
@@ -80,7 +95,7 @@ public class UrlService {
     public void deleteUrl(String shortCode){
         ShortUrl url = urlRepository.findByShortCode(shortCode).orElseThrow(
                 () -> new UrlNotFoundException(shortCode));
-
+        template.delete("url:" + shortCode);
         urlRepository.delete(url);
     }
 

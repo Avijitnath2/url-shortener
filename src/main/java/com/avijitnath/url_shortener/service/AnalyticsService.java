@@ -6,7 +6,6 @@ import com.avijitnath.url_shortener.entity.ShortUrl;
 import com.avijitnath.url_shortener.exception.UrlNotFoundException;
 import com.avijitnath.url_shortener.repository.ClickEventRepository;
 import com.avijitnath.url_shortener.repository.UrlRepository;
-import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
@@ -30,13 +29,16 @@ public class AnalyticsService {
 
     @Async
     @Transactional
-    public void recordClick(ShortUrl shortUrl, HttpServletRequest request){
+    public void recordClick(String shortCode, String ipAddress, String referer, String userAgent){
+        ShortUrl shortUrl = urlRepository.findByShortCode(shortCode)
+                .orElseThrow(()-> new UrlNotFoundException(shortCode));
         ClickEvent event = new ClickEvent();
         event.setShortUrl(shortUrl);
-        event.setIpAddress(request.getRemoteAddr());
-        event.setReferrer(request.getHeader("Referer"));
-        event.setUserAgent(request.getHeader("User-Agent"));
-
+        event.setIpAddress(ipAddress);
+        event.setReferrer(referer);
+        event.setUserAgent(userAgent);
+        shortUrl.setTotalClicks(shortUrl.getTotalClicks() + 1L);
+        urlRepository.save(shortUrl);
         clickEventRepository.save(event);
     }
 

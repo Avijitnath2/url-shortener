@@ -36,12 +36,17 @@ public class UrlController {
     // Get mapping to redirect to original url when valid short code is provided
     @GetMapping("/{code}")
     public ResponseEntity<Void> redirect(@PathVariable String code, HttpServletRequest request){
-        ShortUrl url = urlService.redirect(code);
-        analyticsService.recordClick(url, request);
+        String originalUrl = urlService.redirect(code);
+
+        String ipAddress =request.getRemoteAddr();
+        String referer = request.getHeader("Referer");
+        String userAgent = request.getHeader("User-Agent");
+
+        analyticsService.recordClick(code, ipAddress, referer, userAgent);
 
         return ResponseEntity
                 .status(HttpStatus.FOUND)
-                .location(URI.create(url.getOriginalUrl()))
+                .location(URI.create(originalUrl))
                 .build();
     }
 
