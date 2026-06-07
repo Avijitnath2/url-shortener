@@ -4,6 +4,9 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
@@ -33,13 +36,16 @@ public class ShortUrl {
     private LocalDateTime createdAt;
 
     @Column(name = "total_clicks", nullable = false)
-    private Integer totalClicks = 0;
+    private Long totalClicks = 0L;
+
+    @OneToMany(mappedBy = "shortUrl", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<ClickEvent> clickEvents = new ArrayList<>();
 
     public ShortUrl() {
     }
 
     public ShortUrl(Long id, String shortCode, String originalUrl, String customAlias,
-                    LocalDateTime expiresAt, LocalDateTime createdAt, Integer totalClicks) {
+                    LocalDateTime expiresAt, LocalDateTime createdAt, Long totalClicks) {
         this.id = id;
         this.shortCode = shortCode;
         this.originalUrl = originalUrl;
@@ -93,11 +99,11 @@ public class ShortUrl {
         return createdAt;
     }
 
-    public Integer getTotalClicks() {
+    public Long getTotalClicks() {
         return totalClicks;
     }
 
-    public void setTotalClicks(Integer totalClicks) {
+    public void setTotalClicks(Long totalClicks) {
         this.totalClicks = totalClicks;
     }
 }

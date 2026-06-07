@@ -2,6 +2,7 @@ package com.avijitnath.url_shortener.service;
 
 import com.avijitnath.url_shortener.dto.ShortenRequest;
 import com.avijitnath.url_shortener.dto.ShortenResponse;
+import com.avijitnath.url_shortener.dto.UrlMetadataDto;
 import com.avijitnath.url_shortener.entity.ShortUrl;
 import com.avijitnath.url_shortener.exception.UrlExpiredException;
 import com.avijitnath.url_shortener.exception.UrlNotFoundException;
@@ -62,17 +63,16 @@ public class UrlService {
     }
 
     //return original url based on the short code/url provided
-    public String redirect(String shortCode){
+    public ShortUrl redirect(String shortCode){
         ShortUrl url = urlRepository.findByShortCode(shortCode)
                 .orElseThrow(() -> new UrlNotFoundException(shortCode));
 
         if(url.getExpiresAt() != null && url.getExpiresAt().isBefore(LocalDateTime.now())){
             throw new UrlExpiredException(shortCode);
         }
-
-        url.setTotalClicks(url.getTotalClicks() + 1);
+        url.setTotalClicks(url.getTotalClicks() + 1L);
         urlRepository.save(url);
-        return url.getOriginalUrl();
+        return url;
     }
 
 
@@ -82,6 +82,18 @@ public class UrlService {
                 () -> new UrlNotFoundException(shortCode));
 
         urlRepository.delete(url);
+    }
+
+    public UrlMetadataDto findMetadataOfUrl(String shortCode){
+        UrlMetadataDto metaData = new UrlMetadataDto();
+        ShortUrl url = urlRepository.findByShortCode(shortCode)
+                .orElseThrow(() -> new UrlNotFoundException(shortCode));
+        metaData.setOriginalUrl(url.getOriginalUrl());
+        metaData.setCustomAlias(url.getCustomAlias());
+        metaData.setCreatedAt(url.getCreatedAt());
+        metaData.setExpiresAt(url.getExpiresAt());
+
+        return metaData;
     }
 
 }
